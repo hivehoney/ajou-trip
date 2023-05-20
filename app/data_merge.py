@@ -3,7 +3,6 @@ import pandas as pd
 import requests
 import json
 from datetime import datetime as dtime
-import Travel_list
 
 #도시별 날씨 조회코드 불러오기
 Citydata_filename = fr'Citydata_2023-05-20.csv'
