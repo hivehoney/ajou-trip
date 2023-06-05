@@ -4,129 +4,130 @@ import requests
 import json
 import os
 from datetime import datetime as dt
+from app.api import API
+from api import API
 
+api = API()
 
-#인기 도시별 축제일정 불러오기-------------------------start
-Citydata_filename = fr'Citydata_2023-05-20.csv'
-Travel_Place_df = pd.read_csv(Citydata_filename, encoding='utf-8')
-station = dict(zip(Travel_Place_df['도시이름'], Travel_Place_df['날씨조회코드']))
-def Festival_Schedule():
-    Festivaldata_filename = fr'2023_festival_schedule.csv'
-    Festival_Schedule_df = pd.read_csv(Festivaldata_filename, encoding='utf-8').sort_values('축제시작일자')
-    Festival_Schedule_df['소재지주소'] = Festival_Schedule_df['소재지도로명주소'].str.split().str[:2].str.join(' ')
-    Festival_Schedule_df.loc[Festival_Schedule_df['소재지주소'].isnull(), '소재지주소'] = Festival_Schedule_df['소재지지번주소'].str.split().str[:2].str.join(' ')
-    del Festival_Schedule_df['소재지도로명주소']
-    del Festival_Schedule_df['소재지지번주소']
-    Festival_Schedule_df['소재지주소'] = Festival_Schedule_df['소재지주소'].fillna('')
-    Festival_Schedule_df['축제시작일자'] = pd.to_datetime(Festival_Schedule_df['축제시작일자'])
-    Festival_Schedule_df['축제종료일자'] = pd.to_datetime(Festival_Schedule_df['축제종료일자'])
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
+result = api.get_festival()
+"""
+    fstvlNm: 축제명
+    addr: 소재지주소
+    rdnmadr: 소재지도로명주소
+    lnmadr: 소재지지번주소
+    fstvlStartDate: 축제시작일자
+    fstvlEndDate: 축제종료일자
+    fstvlDate: 축제일
+"""
+class travel_place:
+    def Festival_Schedule(self):
+        # Festivaldata_filename = fr'2023_festival_schedule.csv'
+        # Festival_Schedule_df = pd.read_csv(Festivaldata_filename, encoding='utf-8').sort_values('축제시작일자')
+        Festival_Schedule_df = pd.DataFrame(api.get_festival())
 
-    def generate_festival_dates(row):
-        start_date = pd.to_datetime(row['축제시작일자'])
-        end_date = pd.to_datetime(row['축제종료일자'])
-        dates = pd.date_range(start_date, end_date)
-        festival_name = row['축제명']
-        location = row['소재지주소']
-        festival_dates = pd.DataFrame({'축제명': festival_name, '축제일': dates, '소재지주소': location})
-        return festival_dates
+        #addr(소재지주소) 컬럼으로 병합
+        Festival_Schedule_df['addr'] = Festival_Schedule_df['rdnmadr'].str.split().str[:2].str.join(' ')
+        Festival_Schedule_df.loc[Festival_Schedule_df['addr'].isnull(), 'addr'] = Festival_Schedule_df['lnmadr'].str.split().str[:2].str.join(' ')
 
-    festival_dates = Festival_Schedule_df.apply(generate_festival_dates, axis=1)
-    Festival_Schedule_df = pd.concat(festival_dates.tolist(), ignore_index=True)
-    Festival_Schedule_df = Festival_Schedule_df[Festival_Schedule_df['소재지주소'].isin(station.keys())]
-    Festival_Schedule_df['축제일'] = pd.to_datetime(Festival_Schedule_df['축제일'])
-    Festival_Schedule_df['축제일'] = Festival_Schedule_df['축제일'].dt.strftime('%Y-%m-%d')
-    Festival_Schedule_df_Grouped_1 = Festival_Schedule_df.groupby(['축제명','소재지주소']).agg({'축제일':list})
-    Festival_Schedule_df_Grouped_2 = Festival_Schedule_df.groupby(['소재지주소']).agg(축제일=('축제일', lambda x: list(x)))
-    return Festival_Schedule_df_Grouped_1, Festival_Schedule_df_Grouped_2
-#도시별 축제일정 불러오기-------------------------end
-Festival_Schedule, Festival_Schedule_2 = Festival_Schedule()
-print(Festival_Schedule)
-print(Festival_Schedule_2.to_string())
+        del Festival_Schedule_df['rdnmadr']
+        del Festival_Schedule_df['lnmadr']
 
+        #데이터 format
+        Festival_Schedule_df['addr'] = Festival_Schedule_df['addr'].fillna('')
+        Festival_Schedule_df['fstvlStartDate'] = pd.to_datetime(Festival_Schedule_df['fstvlStartDate'])
+        Festival_Schedule_df['fstvlEndDate'] = pd.to_datetime(Festival_Schedule_df['fstvlEndDate'])
+        #######################################
 
-def classify_season(date):
-    month = date.month
+        #시작일~종료일 날짜 생성
+        festival_dates = pd.concat([pd.DataFrame({'fstvlNm': row['fstvlNm'], 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
+                                                     ,'addr': row['addr']}) for i, row in Festival_Schedule_df.iterrows()])
 
-    if month in [3, 4, 5]:
-        return "봄"  # Spring
-    elif month in [6, 7, 8]:
-        return "여름"  # Summer
-    elif month in [9, 10, 11]:
-        return "가을"  # Autumn
-    else:
-        return "겨울"  # Winter
+        #인기여행지인 곳만 생성 
+        festival_dates = festival_dates[festival_dates['addr'].isin(Travel_Place_df.values())]
+        
+        #데이터 포맷
+        festival_dates['fstvlDate'] = pd.to_datetime(festival_dates['fstvlDate']).dt.strftime('%Y-%m-%d')
+        festival_dates_grouped_1 = festival_dates.groupby(['fstvlNm', 'addr']).agg({'fstvlDate': list})
+        festival_dates_grouped_2 = festival_dates.groupby(['addr']).agg(fstvlDate=('fstvlDate', lambda x: list(x)))
 
-def get_kr_HOLI_holidays(year):
-        url = f'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?' \
-              f'solYear={year}&_type=json&numOfRows=100&' \
-              f'ServiceKey=p7igRYPscMbJM%2BGd70el0sQ6MywPGRCBMQoB%2FVOhTj%2FWhBux%2FFXg2vUtRX9y0FTWwwjCfwZgMktA12I937NfYQ%3D%3D'
+        return festival_dates_grouped_1, festival_dates_grouped_2
 
-        response = requests.get(url)
-        data = response.json()
+    def classify_season(date):
+        month = date.month
 
-        holidays = {}
+        if month in [3, 4, 5]:
+            return "Spring"  # Spring
+        elif month in [6, 7, 8]:
+            return "Summer"  # Summer
+        elif month in [9, 10, 11]:
+            return "Autumn"  # Autumn
+        else:
+            return "Winter"  # Winter
 
-        if "response" in data and "body" in data["response"]:
-            items = data["response"]["body"]["items"]["item"]
+# 인기 도시별 축제일정 불러오기-------------------------start
+# Citydata_filename = fr'Citydata_2023-05-20.csv'
+# Travel_Place_df = pd.read_csv(Citydata_filename, encoding='utf-8')
+# station = dict(zip(Travel_Place_df['districtCode'], Travel_Place_df['districtName']))
 
-            for item in items:
-                holiday_date = item["locdate"]
-                holiday_name = item["dateName"]
+travel = travel_place()
+year = [2023]
+#인기여행지
+global Travel_Place_df, holidays
 
-                if holiday_name not in holidays:
-                    holidays[holiday_name] = []
+Travel_Place_df = api.get_travel_place()
+holidays = api.get_kr_HOLI_holidays(2023)
 
-                holidays[holiday_name].append(holiday_date)
+#인기여행지 축제정보
+festival_dates_grouped_1, festival_dates_grouped_2 = travel.Festival_Schedule()
 
-        return holidays
+print(festival_dates_grouped_1)
+print(festival_dates_grouped_2)
 
-def classify_holiday(date):
-    if date.weekday() in [5, 6]:
+#휴일체크
+def classify_holiday(holidays, date):
+    if date.weekday() in [5, 6] or date.strftime("%Y%m%d") in holidays.values():
         return "holiday"
     else:
-        for value in holidays.values():
-            if date.strftime("%Y%m%d") in [str(v) for v in value]:
-                return "holiday"
         return "non-holiday"
 
-for year in [2023]:
-    for key,value in station.items():
-        print(f'{key}')
-        #dtime.now().year
-        holidays = get_kr_HOLI_holidays(year)
+"""
+holYN: 휴일여부
+date: 날짜
+fstvlCnt: 축제 갯수
+"""
+for year in year:
+    for key, value in Travel_Place_df.items():
+        print(f'{value}')
+
         Human_data = fr'{year}_human_data.csv'
-        start_date = dt(year, 1, 1).date()
-        end_date = dt(year, 12, 31).date()
-        date_list = pd.date_range(start_date, end_date)
-        holiday_df = pd.DataFrame({"ds": date_list}).astype('object')
-        holiday_df["holiday"] = holiday_df["ds"].apply(classify_holiday)
-        holiday_df['ds'] = pd.to_datetime(holiday_df['ds'])
-        holiday_df['ds'] = holiday_df['ds'].dt.strftime('%Y-%m-%d')
-        holiday_df.columns = ["날짜","휴일여부"]
-        Festival_place = list(Festival_Schedule_2.index)
+
+        #휴일데이터생성
+        date_list = pd.date_range(f'{year}-01-01', f'{year}-12-31')
+        holiday_df = pd.DataFrame({"date": date_list})
+        holiday_df["holYN"] = holiday_df["date"].apply(lambda date: classify_holiday(holidays, date))
+        holiday_df['date'] = holiday_df['date'].dt.strftime('%Y-%m-%d')
+
+        Festival_place = list(festival_dates_grouped_2.index)
         print(Festival_place)
+
         if year == dt.now().year:
-            holiday_df['축제갯수'] = 0
-            for index, row in holiday_df.iterrows():
-                date = str(row['날짜'].split()[0])  # 날짜 형식을 'YYYY-MM-DD'로 변경
-                festival_count = 0
-                if key in Festival_place:
-                    for festival_dates in Festival_Schedule_2.loc[key, '축제일']:
-                        if str(date) in festival_dates:
-                            festival_count += 1
-                            holiday_df.at[index, '축제갯수'] = festival_count
-                    else:
-                        continue
+            holiday_df['fstvlCnt'] = holiday_df['date'].apply(lambda x: sum(str(x.split()[0]) in festival_dates for festival_dates in festival_dates_grouped_2.loc[value, 'fstvlDate']) if value in Festival_place else 0)
             result_df = holiday_df
+            print(result_df)
         else:
-            Human_df = pd.read_csv(Human_data, encoding='utf-8')[key]
+            Human_df = pd.read_csv(Human_data, encoding='utf-8')[value]
             Human_df = Human_df.rename('유동인구수')
-            result_df = pd.concat([holiday_df,Human_df],axis=1)
+            result_df = pd.concat([holiday_df, Human_df], axis=1)
+
         result_df.fillna(0, inplace=True)
-        result_df['계절'] = result_df['날짜'].apply(lambda x: classify_season(pd.to_datetime(x)))
+        result_df['계절'] = result_df['date'].apply(lambda x: travel_place.classify_season(pd.to_datetime(x)))
         print(result_df.to_string())
         folder_path = f'{year}_holidayandseason_data'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        result_df.to_csv(os.path.join(folder_path, f'{year}_result_data({key}).csv'), encoding='utf-8-sig', index=False)
+        result_df.to_csv(os.path.join(folder_path, f'{year}_result_data({value}).csv'), encoding='utf-8-sig', index=False)
+
+    print("dd")
