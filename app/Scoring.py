@@ -21,7 +21,7 @@ def RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M):
           f"3. 여행은 역시 축제죠? 지역 축제 일정을 고려하여 축제명/기간/장소 정보를 제공합니다.\n"
           f"4. 최근 3년간 여행인구가 많고, 적었던 계절을 선정하여 보여드리니 여행하실 때 고려해보시면 되겠습니다.\n")
 
-    #축제 일정 데이터 호출
+    #도시 데이터 호출
     Citydata_filename = fr'Citydata_2023-05-20.csv'
     All_City_df = pd.read_csv(Citydata_filename, usecols=['도시이름'])
     City_list = All_City_df['도시이름'].tolist()
