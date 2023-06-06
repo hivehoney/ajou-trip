@@ -6,31 +6,34 @@ from app.common.util import utilChk
 api = API()
 util = utilChk()
 
-#인기여행지/휴일
+# 인기여행지/휴일
 global Travel_Place_df, holidays
 Travel_Place_df = api.get_travel_place()
 holidays = api.get_kr_HOLI_holidays(2023)
 
+
 class travel_place:
     """
+    fstvlHolYear: 년 휴일/축제 정보
     hlYN: 휴일여부
     date: 날짜
     fstvlCnt: 축제 갯수
     season: 계절
     """
-    # 년 휴일/축제 셋팅
-    def fstvlHolYear(self, year):
+
+    def fstvlHolYear(self, visit, st, ed):
         # 인기여행지 축제정보
         festival_dates_grouped_1, festival_dates_grouped_2 = self.Festival_Schedule()
 
         print(festival_dates_grouped_1)
         print(festival_dates_grouped_2)
+        year = dt.now().year
 
         for year in year:
             for key, value in Travel_Place_df.items():
                 print(f'{value}')
 
-                Human_data = fr'{year}_human_data.csv'
+                Human_data = visit
 
                 # 휴일데이터생성
                 date_list = pd.date_range(f'{year}-01-01', f'{year}-12-31')
@@ -65,6 +68,7 @@ class travel_place:
         return result_df
 
     """
+    Festival_Schedule: 축제일정
     fstvlNm: 축제명
     addr: 소재지주소
     rdnmadr: 소재지도로명주소
@@ -73,7 +77,7 @@ class travel_place:
     fstvlEndDate: 축제종료일자
     fstvlDate: 축제일
     """
-    # 축제데이터 셋팅
+
     def Festival_Schedule(self):
         # Festivaldata_filename = fr'2023_festival_schedule.csv'
         # Festival_Schedule_df = pd.read_csv(Festivaldata_filename, encoding='utf-8').sort_values('축제시작일자')
@@ -81,7 +85,9 @@ class travel_place:
 
         # addr(소재지주소) 컬럼으로 병합
         Festival_Schedule_df['addr'] = Festival_Schedule_df['rdnmadr'].str.split().str[:2].str.join(' ')
-        Festival_Schedule_df.loc[Festival_Schedule_df['addr'].isnull(), 'addr'] = Festival_Schedule_df['lnmadr'].str.split().str[:2].str.join(' ')
+        Festival_Schedule_df.loc[Festival_Schedule_df['addr'].isnull(), 'addr'] = Festival_Schedule_df[
+                                                                                      'lnmadr'].str.split().str[
+                                                                                  :2].str.join(' ')
 
         del Festival_Schedule_df['rdnmadr']
         del Festival_Schedule_df['lnmadr']
@@ -90,12 +96,11 @@ class travel_place:
         Festival_Schedule_df['addr'] = Festival_Schedule_df['addr'].fillna('')
         Festival_Schedule_df['fstvlStartDate'] = pd.to_datetime(Festival_Schedule_df['fstvlStartDate'])
         Festival_Schedule_df['fstvlEndDate'] = pd.to_datetime(Festival_Schedule_df['fstvlEndDate'])
-        #######################################
 
         # 시작일~종료일 날짜 생성
         festival_dates = pd.concat([pd.DataFrame(
             {'fstvlNm': row['fstvlNm'], 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
-            , 'addr': row['addr']}) for i, row in Festival_Schedule_df.iterrows()])
+                , 'addr': row['addr']}) for i, row in Festival_Schedule_df.iterrows()])
 
         # 인기여행지인 곳만 생성
         festival_dates = festival_dates[festival_dates['addr'].isin(Travel_Place_df.values())]
@@ -106,5 +111,3 @@ class travel_place:
         festival_dates_grouped_2 = festival_dates.groupby(['addr']).agg(fstvlDate=('fstvlDate', lambda x: list(x)))
 
         return festival_dates_grouped_1, festival_dates_grouped_2
-
-

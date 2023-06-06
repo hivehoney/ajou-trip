@@ -4,6 +4,7 @@ import requests
 import json
 from datetime import datetime as dtime
 
+
 class API:
     app = FastAPI()
 
@@ -11,14 +12,14 @@ class API:
     def get_festival(self):
         url = 'http://api.data.go.kr/openapi/tn_pubr_public_cltur_fstvl_api'
         service_key = 'd4oz2HqVBL5Q9fG2IkdqGaMsqtxZCdrOh9y6IDk0ya7qmGH8DrTxPnR3hI4UfwHIRy5IxZKFzxGRUw10ZUef4A=='
-        params ={'serviceKey' : service_key, 'pageNo' : '1', 'numOfRows' : '100', 'type' : 'json'}
+        params = {'serviceKey': service_key, 'pageNo': '1', 'numOfRows': '100', 'type': 'json'}
 
         response = requests.get(url, params=params)
         return response.json().get('response').get('body').get('items')
 
-
     # 인기여행지API(123곳)
     def get_travel_place(self):
+        max_length = 5
         sk_url = "https://apis.openapi.sk.com/puzzle/travel?type=sig"
         headers = {
             "accept": "application/json",
@@ -27,9 +28,10 @@ class API:
 
         response = requests.get(sk_url, headers=headers)
         travel_place = response.json()['contents']
-        return {Dict['districtCode']: Dict['districtName'] for Dict in travel_place}
+        travel_place = {Dict['districtCode']: Dict['districtName'] for Dict in travel_place}
+        return {key[:max_length]: value for key, value in travel_place.items()}
 
-    #휴일정보 API
+    # 휴일정보 API
     def get_kr_HOLI_holidays(self, year):
         url = f'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?' \
               f'solYear={year}&_type=json&numOfRows=100&' \
@@ -46,21 +48,35 @@ class API:
 
         return holidays
 
+    # 광역지자체 지역방문자수 집계 API
+    def get_local_visitor(self, st, ed):
+        try:
+            url = fr'http://apis.data.go.kr/B551011/DataLabService/locgoRegnVisitrDDList?' \
+                  fr'serviceKey=p7igRYPscMbJM%2BGd70el0sQ6MywPGRCBMQoB%2FVOhTj%2FWhBux%2FFXg2vUtRX9y0FTWwwjCfwZgMktA12I937NfYQ%3D%3D' \
+                  fr'&numOfRows=10000&pageNo=1&MobileOS=ETC&MobileApp=HOLIDAYTRIP&_type=json&startYmd={st}&endYmd={ed}'
+                  # fr'&MobileOS=ETC&MobileApp=HOLIDAYTRIP&_type=json&startYmd={date}&endYmd={date}'
+
+            response = requests.get(url)
+            data = response.json().get('response').get('body').get('items').get('item')
+        except Exception as e:
+            print(f"예외사항 발생 :  {str(e)}")
+
+        return data
+
     @app.get("/hello/{name}")
     async def say_hello(name: str):
         return {"message": f"Hellos {name}"}
 
-
-    #날씨 정보 수집 API
+    # 날씨 정보 수집 API
     @app.get("/test1")
     def Weather_API(self):
         last_successful_year = 0
         last_successful_month = 0
 
-        #2021년~현재날짜 까지 조회
+        # 2021년~현재날짜 까지 조회
         for year in range(2021, dtime.now().year):
             for month in range(1, 13):
-                #만약 connection refused로 인한 API 조회 실패시 현재시점에서 재시도
+                # 만약 connection refused로 인한 API 조회 실패시 현재시점에서 재시도
                 while True:
                     try:
                         print(year, month)
@@ -72,17 +88,17 @@ class API:
                         Weather_info = Weather_data['response']['body']['items']['item'][0]['stndays']['info']
                         Weather_info_Filter = []
 
-                        #garbage 데이터 걸러내기(날짜만)
+                        # garbage 데이터 걸러내기(날짜만)
                         for item in Weather_info:
                             if item['tm'] not in ['상순', '중순', '하순', 'null']:
                                 Weather_info_Filter.append(item)
 
-                        #데이터 결과값(날짜,최저기온,최고기온,풍량)
+                        # 데이터 결과값(날짜,최저기온,최고기온,풍량)
                         Weather_result = pd.DataFrame({
                             'tm': [item['tm'] for item in Weather_info_Filter],
                             'ta_min': [item['ta_min'] for item in Weather_info_Filter],
                             'ta_max': [item['ta_max'] for item in Weather_info_Filter],
-                            'ws' : [item['ta_max'] for item in Weather_info_Filter]
+                            'ws': [item['ta_max'] for item in Weather_info_Filter]
                         })
                         Weather_items_df = pd.DataFrame([Weather_items])
                         Weather_result_df = pd.DataFrame(Weather_result)
@@ -96,7 +112,6 @@ class API:
                         print(f"예외사항 발생 :  {str(e)}")
                         print(f"API를 재호출합니다. 연도 : {last_successful_year}, 월 : {last_successful_month}")
                         continue
-
             else:
                 continue
             break
