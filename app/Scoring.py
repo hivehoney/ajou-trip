@@ -13,15 +13,7 @@ import datetime as dt
 
 
 def RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M):
-    print(f"{CITY_PARM}에서 {DATE_N}박 {DATE_M}일을 여행하실 거군요!")
-    print(f"{CITY_PARM}에서 {DATE_N}박 {DATE_M}일을 여행하기 위한 최적의 일정과 여행지를 제공하겠습니다.")
-    print(f"저희가 제공하는 데이터는 아래의 분석 사항을 따릅니다.\n"
-          f"1. SK Telecom에서 분석한 인기 관광지역 123개 도시를 선정하여 보여드립니다.\n"
-          f"2. Holiday Trip이라는 이름에 걸맞게 휴일 위주의 일정을 먼저 제공합니다.\n"
-          f"3. 여행은 역시 축제죠? 지역 축제 일정을 고려하여 축제명/기간/장소 정보를 제공합니다.\n"
-          f"4. 최근 3년간 여행인구가 많고, 적었던 계절을 선정하여 보여드리니 여행하실 때 고려해보시면 되겠습니다.\n")
-
-    #도시 데이터 호출
+    #축제 일정 데이터 호출
     Citydata_filename = fr'Citydata_2023-05-20.csv'
     All_City_df = pd.read_csv(Citydata_filename, usecols=['도시이름'])
     City_list = All_City_df['도시이름'].tolist()
@@ -36,7 +28,6 @@ def RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M):
         df_holiday_with_festivals = df[df['축제갯수'] >= 1]
         df_holiday_with_festivals_sorted = df_holiday_with_festivals.sort_values(by='계절')
         df_holidays = df.loc[df['휴일여부'] == 'holiday']
-        #print(df_holiday_with_festivals_sorted.to_string())
         #스코어링
         Holiday_Score = len(df_holiday_with_festivals_sorted) * 10
         Festival_Score = df_holiday_with_festivals_sorted['축제갯수'].sum() * 5
@@ -57,7 +48,6 @@ def RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M):
             if name in item:
                 sorted_item = dict(sorted(item[name].items(), key=lambda x: x[1], reverse=True))
                 Season_Tour_Human_DATA_LIST_TOP.append({name: sorted_item})
-                print(Season_Tour_Human_DATA_LIST_TOP)
 
     TOP1_City = TOP2_City = TOP3_City = 0
 
@@ -169,6 +159,6 @@ def RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M):
                 RECOMMEND_SCHEDULE_DATA_LIST.append(RECOMMEND_SCHEDULE_DATA)
 
     RECOMMEND_SCHEDULE_DATA_LIST = [item for item in RECOMMEND_SCHEDULE_DATA_LIST if item is not None]
-    print(RECOMMEND_SCHEDULE_DATA_LIST)
     return RECOMMEND_SCHEDULE_DATA_LIST
 
+RECOMMEND_DATA("제주특별자치도",2,3)
