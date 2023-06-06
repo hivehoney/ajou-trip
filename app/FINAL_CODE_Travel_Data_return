@@ -1,0 +1,94 @@
+import Season_Tour_Human
+import Festival_Map
+import Scoring
+import matplotlib.pyplot as plt
+
+#READ_ME
+#해당 코드를 실행하게되면, TRAVEL_SCHEDULE, SEASON_HUMAN_AVERAGE, FESTIVAL_MAP을 가져가게 됩니다.
+
+#TRAVEL_SCHEDULE은 추천되는 각 계절별의 여행일정을 리스트안의 딕셔너리 형태로 담고 있습니다.
+#[{'경기도 양평군': {'season': '봄', 'Start_date': '2023-03-18', 'End_date': '2023-03-20', 'Start_week': 5, 'End_week': 0, 'Festival': 1}},
+# {'경기도 양평군': {'season': '여름', 'Start_date': '2023-07-28', 'End_date': '2023-07-30', 'Start_week': 4, 'End_week': 6, 'Festival': 1}},
+# {'경기도 양평군': {'season': '가을', 'Start_date': '2023-09-16', 'End_date': '2023-09-18', 'Start_week': 5, 'End_week': 0, 'Festival': 1}},
+# {'경기도 이천시': {'season': '봄', 'Start_date': '2023-04-08', 'End_date': '2023-04-10', 'Start_week': 5, 'End_week': 0, 'Festival': 1}},
+# {'경기도 광주시': {'season': '봄', 'Start_date': '2023-05-04', 'End_date': '2023-05-06', 'Start_week': 3, 'End_week': 5, 'Festival': 1}}]
+# 도시이름이 key가 되며, 그 안에 하위 딕셔너리로 season, Start_date, End_date, Start_week, End_week, Festival이 있습니다
+# season : 계절, Start_date : 출발일, End_date : 귀가일, Start_week : 출발일 요일번호, End_week : 귀가일 요일번호, Festival : 기간내 축제 갯수
+# 요일번호는 다음과 같습니다. [월 : 0, 화 : 1, 수 : 2, 목 : 3, 금 : 4, 토 : 5, 일 : 6]
+
+#SEASON_HUMAN_AVERAGE
+#각 계절별 과거 유동인구의 평균치 데이터 그래프입니다.
+#{city_name}_plot.png"인 PNG 형태의 맵플로잇 그래프가 저장됩니다
+#city_name은 TRAVEL_SCHEDULE의 각 도시키가 됩니다.
+#  ex) 위 예시 딕셔너리를 참고했을 때 [경기도 양평군, 경기도 이천시, 경기도 광주시]입니다.
+
+#FESTIVAL_MAP은 여행지역 행사 데이터가 출력됩니다.
+#Festival_map.html의 HTML 웹문서 데이터가 저장됩니다.
+#지도 별 마커 색상은 계절에 따라 아래처럼 분류됩니다.
+# 봄 : 라이트레드(핑크), 여름 : 그린, 가을 : 오렌지, 겨울 : 다크그레이
+
+
+#필수 변수
+#CITY_PARM -> 광역시/도급의 도시입력(서울특별시, 경기도, 충청남도 등)
+#DATE_N    -> N박 M일 중 N 입력(if N = 2 -> 2박)
+#DATE_M    -> N박 M일 중 M 입력(if M = 3 -> 3일)
+#3박 4일까지만 제공
+CITY_PARM = "경기도"
+DATE_N = 2
+DATE_M = 3
+
+#각 여행지별 여행일정 데이터 추출
+TRAVEL_SCHEDULE = Scoring.RECOMMEND_DATA(CITY_PARM,DATE_N,DATE_M)
+#계절별 과거 유동인구 데이터 평균치 그래프
+SEASON_HUMAN_AVERAGE = Season_Tour_Human.HUMANDATA(CITY_PARM)
+#지도 형성
+FESTIVAL_MAP = Festival_Map.FESTIVAL(CITY_PARM, DATE_N, DATE_M)
+
+print(f"{CITY_PARM}에서 {DATE_N}박 {DATE_M}일을 여행하실 거군요!")
+print(f"{CITY_PARM}에서 {DATE_N}박 {DATE_M}일을 여행하기 위한 최적의 일정과 여행지를 제공하겠습니다.")
+print(f"저희가 제공하는 데이터는 아래의 분석 사항을 따릅니다.\n"
+      f"1. SK Telecom에서 분석한 인기 관광지역 123개 도시를 선정하여 보여드립니다.\n"
+      f"2. Holiday Trip이라는 이름에 걸맞게 휴일 위주의 일정을 먼저 제공합니다.\n"
+      f"3. 여행은 역시 축제죠? 지역 축제 일정을 고려하여 축제명/기간/장소 정보를 제공합니다.\n"
+      f"4. 최근 3년간 여행인구가 많고, 적었던 계절을 선정하여 보여드리니 여행하실 때 고려해보시면 되겠습니다.\n")
+
+extracted_data = []
+for travel_data in TRAVEL_SCHEDULE:
+    city_name = list(travel_data.keys())[0]
+    for season_data in SEASON_HUMAN_AVERAGE:
+        if city_name in season_data:
+            extracted_data.append({city_name: season_data[city_name]})
+            break
+SEASON_HUMAN_AVERAGE = extracted_data
+del extracted_data
+
+colors = {'Spring': 'lightcoral', 'Summer': 'limegreen', 'Fall': 'red', 'Winter': 'dimgray'}
+
+plt.figure(figsize=(8, 6))
+
+for city_data in SEASON_HUMAN_AVERAGE:
+    city_name = list(city_data.keys())[0]
+    seasons = list(city_data[city_name].keys())
+    population = list(city_data[city_name].values())
+
+    plt.bar(seasons, population, color=[colors[season] for season in seasons])
+    plt.title(f"[{city_name}] 계절별 유동인구 데이터", fontsize=16)
+    plt.xlabel("계절", fontsize=12)
+    plt.ylabel("유동인구", fontsize=12)
+
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.grid(axis='y', linestyle='--', color='lightgray')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+
+    for bar in plt.gca().patches:
+        plt.gca().annotate(f"{bar.get_height():.0f}", (bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                           ha='center', va='bottom', fontsize=9, color='black')
+
+    plt.savefig(f"{city_name}_plot.png")
+
+FESTIVAL_MAP.save("Festival_map.html")
+
+print(TRAVEL_SCHEDULE)
+print(SEASON_HUMAN_AVERAGE)
