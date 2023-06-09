@@ -1,4 +1,3 @@
-from fastapi import FastAPI
 import pandas as pd
 import requests
 import json
@@ -6,7 +5,6 @@ from datetime import datetime as dtime
 
 
 class API:
-    app = FastAPI()
 
     # 축제정보 API
     def get_festival(self):
@@ -29,6 +27,7 @@ class API:
         response = requests.get(sk_url, headers=headers)
         travel_place = response.json()['contents']
         travel_place = {Dict['districtCode']: Dict['districtName'] for Dict in travel_place}
+        # travel_place['districtCode'] = travel_place['districtCode'].str.slice(stop=max_length)
         return {key[:max_length]: value for key, value in travel_place.items()}
 
     # 휴일정보 API
@@ -63,12 +62,8 @@ class API:
 
         return data
 
-    @app.get("/hello/{name}")
-    async def say_hello(name: str):
-        return {"message": f"Hellos {name}"}
 
     # 날씨 정보 수집 API
-    @app.get("/test1")
     def Weather_API(self):
         last_successful_year = 0
         last_successful_month = 0
