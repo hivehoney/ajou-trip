@@ -1,6 +1,5 @@
 import pandas as pd
 from datetime import datetime as dt
-
 from common.api import API
 from common.util import utilChk
 
@@ -12,7 +11,6 @@ global Travel_Place_df, holidays
 Travel_Place_df = api.get_travel_place()
 holidays = api.get_kr_HOLI_holidays(2023)
 
-
 class travel_place:
     """
     fstvlHolYear: 년 휴일/축제 정보
@@ -21,51 +19,51 @@ class travel_place:
     fstvlCnt: 축제 갯수
     season: 계절
     """
-
-    def fstvlHolYear(self, visit, st, ed):
+    def fstvlHolYear(self, visit, year):
         # 인기여행지 축제정보
         festival_dates_grouped_1, festival_dates_grouped_2 = self.Festival_Schedule()
-
+        City_list = {value for _, value in Travel_Place_df.items() if visit in value}
         print(festival_dates_grouped_1)
         print(festival_dates_grouped_2)
         year = dt.now().year
 
-        for year in year:
-            for key, value in Travel_Place_df.items():
-                print(f'{value}')
+        def calculate_festival_count(date, City_list, festival_dates_grouped_2):
+            count = 0
+            for place in City_list:
+                if place in festival_dates_grouped_2.index:
+                    festival_dates = festival_dates_grouped_2.loc[place, 'fstvlDate']
+                    if date in festival_dates:
+                        count += 1
+            return count
 
-                Human_data = visit
+        Festival_place = list(festival_dates_grouped_2.index)
+        #for _, value in City_list.items():
+        # 휴일데이터생성
+        '''
+        holiday_df['fstvlCnt'] = holiday_df['date'].apply(lambda x: sum(
+            str(x.split()[0]) in festival_dates for festival_dates in
+            festival_dates_grouped_2.loc['addr', 'fstvlDate']) if visit in Festival_place else 0)
+        result_df = holiday_df
+        '''
+        date_list = pd.date_range(f'{year}-01-01', f'{year}-12-31')
+        holiday_df = pd.DataFrame({"date": date_list})
+        holiday_df["hlYN"] = holiday_df["date"].apply(lambda date: util.classify_holiday(holidays, date))
+        holiday_df['date'] = holiday_df['date'].dt.strftime('%Y-%m-%d')
 
-                # 휴일데이터생성
-                date_list = pd.date_range(f'{year}-01-01', f'{year}-12-31')
-                holiday_df = pd.DataFrame({"date": date_list})
-                holiday_df["holYN"] = holiday_df["date"].apply(lambda date: util.classify_holiday(holidays, date))
-                holiday_df['date'] = holiday_df['date'].dt.strftime('%Y-%m-%d')
-
-                Festival_place = list(festival_dates_grouped_2.index)
-
-                if year == dt.now().year:
-                    holiday_df['fstvlCnt'] = holiday_df['date'].apply(lambda x: sum(
-                        str(x.split()[0]) in festival_dates for festival_dates in
-                        festival_dates_grouped_2.loc[value, 'fstvlDate']) if value in Festival_place else 0)
-                    result_df = holiday_df
-                    print(result_df)
-                else:
-                    Human_df = pd.read_csv(Human_data, encoding='utf-8')[value]
-                    Human_df = Human_df.rename('유동인구수')
-                    result_df = pd.concat([holiday_df, Human_df], axis=1)
-
-                result_df.fillna(0, inplace=True)
-                result_df['season'] = result_df['date'].apply(lambda x: util.classify_season(pd.to_datetime(x)))
-                print(result_df.to_string())
-
-                # folder_path = f'{year}_holidayandseason_data'
-                # if not os.path.exists(folder_path):
-                #     os.makedirs(folder_path)
-                #
-                # result_df.to_csv(os.path.join(folder_path, f'{year}_result_data({value}).csv'), encoding='utf-8-sig', index=False)
+        places_in_visit = [place for place in Festival_place if visit in place]
+        holiday_df['fstvlCnt'] = holiday_df['date'].apply(
+            lambda x: calculate_festival_count(x, places_in_visit, festival_dates_grouped_2)
+        )
+        result_df = holiday_df
+        print(result_df.to_string())
 
         return result_df
+        # folder_path = f'{year}_holidayandseason_data'
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
+        #
+        # result_df.to_csv(os.path.join(folder_path, f'{year}_result_data({value}).csv'), encoding='utf-8-sig', index=False)
+
 
     """
     Festival_Schedule: 축제일정
@@ -109,3 +107,5 @@ class travel_place:
         festival_dates_grouped_2 = festival_dates.groupby(['addr']).agg(fstvlDate=('fstvlDate', lambda x: list(x)))
 
         return festival_dates_grouped_1, festival_dates_grouped_2
+
+
