@@ -3,9 +3,8 @@ import pandas as pd
 import requests
 import json
 import datetime as dt
-from Holiday_and_season import travel_place
-from get_human_data import visitor
-from common.api import API
+
+from app.common.api import API
 
 api = API()
 

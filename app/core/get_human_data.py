@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta
 import pandas as pd
+from datetime import datetime, timedelta
 
-from common.api import API
+from app.common.api import API
 
 api = API()
 
 # 인기여행지/휴일
 global Travel_Place_df, holidays
-Travel_Place_df = api.get_travel_place()
+# Travel_Place_df = api.get_travel_place()
+
 
 class visitor:
     """
@@ -23,9 +24,12 @@ class visitor:
     """
 
     def get_visitor(self, city, st, ed):
+        st = datetime.strptime(st, "%Y-%m-%d").strftime("%Y%m%d")
+        ed = datetime.strptime(ed, "%Y-%m-%d").strftime("%Y%m%d")
+
         data = api.get_local_visitor(st, ed)
 
-        # 특정 키 값들로 데이터프레임 생성
+        # 특정 키 값들로 c 데이터프레임 생성
         select_key = ['baseYmd', 'signguCode', 'signguNm', 'daywkDivCd', 'touNum']
         df = pd.DataFrame(data).filter(select_key, axis=1)
         df['touNum'] = df['touNum'].astype(float).astype(int)
@@ -48,13 +52,21 @@ class visitor:
     local_visitor: 3년치 유동인구 데이터
     """
     def local_visitor(self, city, st, ed):
-        date_format = "%Y%m%d"
+    # def local_visitor(self):
+    #     city = "서울특별시"
+    #     st = "2022-01-14"
+    #     ed = "2022-01-18"
+
         # 날짜 계산
-        st1, ed1 = [datetime.strptime(date, "%Y%m%d") - timedelta(days=365) for date in [st, ed]]
-        st2, ed2 = [datetime.strptime(date, "%Y%m%d") - timedelta(days=365*2) for date in [st, ed]]
+        st1, ed1 = [datetime.strptime(date, "%Y-%m-%d") - timedelta(days=365) for date in [st, ed]]
+        st2, ed2 = [datetime.strptime(date, "%Y-%m-%d") - timedelta(days=365*2) for date in [st, ed]]
 
-        visitor1 = self.get_visitor(city, st, ed)
-        visitor2 = self.get_visitor(city, st1.strftime(date_format), ed1.strftime(date_format))
-        visitor3 = self.get_visitor(city, st2.strftime(date_format), ed2.strftime(date_format))
+        """
+        미래여서 없음
+        """
+        # visitor1 = self.get_visitor(city, st, ed)
+        visitor2 = self.get_visitor(city, st1, ed1)
+        visitor3 = self.get_visitor(city, st2, ed2)
 
-        return visitor1, visitor2, visitor3
+        print(visitor2)
+        return visitor2, visitor3

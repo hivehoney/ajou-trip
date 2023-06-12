@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime as dt
-from common.api import API
-from common.util import utilChk
+from app.common.api import API
+from app.common.util import utilChk
 
 api = API()
 util = utilChk()
