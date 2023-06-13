@@ -69,18 +69,16 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
             visit_dates.at[index, 'fstvlIndex'] = []
             visit_dates.at[index, 'fstvlDate'] = []
 
-    count_indices = []
-
-    # 지역별 관광지 Cnt 및 index
-    for index in rcmnd_local.index.tolist():
-        date_to_check = rcmnd_local.loc[index, 'signguNm']
+    # 지역별 관광지 갯수
+    for index, row in rcmnd_local.iterrows():
+        date_to_check = row['signguNm']
         count = tour['addr'].apply(lambda dates: date_to_check in dates).sum()
         rcmnd_local.at[index, 'tourCnt'] = count
-        count_indices.append(tour[tour['addr'].apply(lambda dates: date_to_check in dates)].index.tolist())
-
-    rcmnd_local['countIndices'] = count_indices
 
     # 일자별 가중치 score
+    # touNum: 유동인구
+    # holiday: 휴일여부
+    # fstvlCnt: 축제 갯수
     visit_dates['score'] = (visit_dates['touNum'] * 0.0000005 +
                             visit_dates['holiday'].apply(lambda x: 10 if x == 'Y' else 0) +
                             visit_dates['fstvlCnt'] * 5)
@@ -95,10 +93,12 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
 
     # 제일 점수가 높은 날짜로 range
     start_date = date[0]
-    date_range = pd.date_range(start=start_date, periods=int(range), freq='D')
+    date_range = pd.date_range(start=start_date, periods=5, freq='D')
     date_range_str = date_range.strftime('%Y%m%d').tolist()
 
     # 지역 가중치 score
+    # tourCnt: 관광지 개수
+    # touNum: 유동인구
     rcmnd_local['score'] = (rcmnd_local['tourCnt'] * 5) + (rcmnd_local['touNum'] * 0.0000005)
     rcmnd_result = rcmnd_local.sort_values(['score', 'touNum'], ascending=[False, False])
 
@@ -111,17 +111,33 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
     for index, row in filtered_result.iterrows():
         if data_index >= len(rcmnd_result):
             data_index = 0
-
         duration = []
         fstvl_indices = row['fstvlIndex']
         if len(fstvl_indices) > 3:
             fstvl_indices = fstvl_indices[:3]
         for fstvl_index in fstvl_indices:
-            festival_data = fstvl.loc[fstvl_index, ['fstvlNm', 'addr']].squeeze().to_dict()
-            duration.append({'fstvlNm': festival_data['fstvlNm'], 'addr': festival_data['addr']})
+            festival_data = fstvl.loc[fstvl_index, ['fstvlNm', 'addr', 'latitude', 'longitude', 'etc']].squeeze().to_dict()
+            duration.append({
+                'festivalName': festival_data['fstvlNm'],
+                'addr': festival_data['addr'],
+                'latitude': festival_data['latitude'],
+                'longitude': festival_data['longitude'],
+                'etc': festival_data['etc']
+            })
         if len(duration) < 3:
             festival_name = rcmnd_result.iloc[data_index:data_index + 3 - len(duration)].to_dict('records')
-            duration.extend(festival_name)
+            for festival in festival_name:
+                addr = festival['signguNm']
+                tour_data = tour[tour['addr'] == addr]
+                if not tour_data.empty:
+                    festival_info = {
+                        'festivalName': tour_data.iloc[0]['fstvlNm'],
+                        'addr': tour_data.iloc[0]['addr'],
+                        'latitude': tour_data.iloc[0]['latitude'],
+                        'longitude': tour_data.iloc[0]['longitude'],
+                        'etc': tour_data.iloc[0]['etc']
+                    }
+                    duration.append(festival_info)
             data_index += 3 - len(duration)
         day = {
             'title': row['baseYmd'],
@@ -130,7 +146,4 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
         result.append(day)
         data_index += 1
 
-    print(result)
-
     return result
-

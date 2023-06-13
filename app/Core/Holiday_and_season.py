@@ -32,15 +32,25 @@ class travel_place:
 
         # 시작일~종료일 날짜 생성
         festival_dates = pd.concat([pd.DataFrame(
-            {'fstvlNm': row['fstvlNm'], 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
-                , 'addr': row['addr']}) for i, row in Festival_Schedule_df.iterrows()])
+            {'fstvlNm': row['fstvlNm']
+             , 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
+            , 'addr': row['addr']
+            , 'latitude': row['latitude']
+            , 'longitude': row['longitude']
+            , 'etc': row['fstvlNm']
+             }) for i, row in Festival_Schedule_df.iterrows()])
 
         # 인기여행지인 곳만 생성
         festival_dates = festival_dates[festival_dates['addr'].str.contains(city)]
 
         # 데이터 포맷
         festival_dates['fstvlDate'] = pd.to_datetime(festival_dates['fstvlDate']).dt.strftime('%Y-%m-%d')
-        festival_dates_grouped_1 = festival_dates.groupby(['fstvlNm', 'addr']).agg({'fstvlDate': list})
+        festival_dates_grouped_1 = festival_dates.groupby(['fstvlNm', 'addr']).agg({'fstvlDate': list,
+                                                                                    'latitude': 'first',
+                                                                                    'longitude': 'first',
+                                                                                    'etc': 'first'
+                                                                                    }).reset_index()
+
         # festival_dates_grouped_2 = festival_dates.groupby(['addr']).agg(fstvlDate=('fstvlDate', lambda x: list(x)))
 
         return festival_dates_grouped_1
@@ -64,7 +74,9 @@ class travel_place:
         # 선택한 도시
         Tourist_Schedule_df = Tourist_Schedule_df[Tourist_Schedule_df['addr'].str.contains(city)]
         return Tourist_Schedule_df
+
+
 #
 # travel_place = travel_place()
 #
-# travel_place.Tourist("부산")
+# travel_place.Festival_Schedule("부산")

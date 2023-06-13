@@ -30,7 +30,8 @@ def hello(id: str, start_date: str, end_date: str, range: str):
     visit = visitor.local_visitor(id, start_date, end_date, Travel_Place_df)
     result = RECOMMEND_DATA(id, start_date, end_date, visit, range)
 
-    return {"message": f"Hellossss {start_date}"}
+    return {"data": f"{result}"}
+
 
 # if __name__ == "__main__":
 #     uvicorn.run(app, host="0.0.0.0", port=8000)
