@@ -31,14 +31,13 @@ class travel_place:
         Festival_Schedule_df['fstvlEndDate'] = pd.to_datetime(Festival_Schedule_df['fstvlEndDate'])
 
         # 시작일~종료일 날짜 생성
-        festival_dates = pd.concat([pd.DataFrame(
-            {'fstvlNm': row['fstvlNm']
-             , 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
-            , 'addr': row['addr']
-            , 'latitude': row['latitude']
-            , 'longitude': row['longitude']
-            , 'etc': row['fstvlNm']
-             }) for i, row in Festival_Schedule_df.iterrows()])
+        festival_dates = pd.concat([pd.DataFrame({'fstvlNm': row['fstvlNm']
+                                                    , 'fstvlDate': pd.date_range(row['fstvlStartDate'], row['fstvlEndDate'])
+                                                    , 'addr': row['addr']
+                                                    , 'latitude': row['latitude']
+                                                    , 'longitude': row['longitude']
+                                                    , 'etc': row['fstvlNm']
+                                                     }) for i, row in Festival_Schedule_df.iterrows()])
 
         # 인기여행지인 곳만 생성
         festival_dates = festival_dates[festival_dates['addr'].str.contains(city)]

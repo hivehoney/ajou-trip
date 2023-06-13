@@ -1,12 +1,15 @@
 import pandas as pd
+import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
+
 from Core.Scoring import RECOMMEND_DATA
 from Core.Human_data import visitor
+from Core.Folium_Map import Folium
 from Common.ApiUtil import API
 
 app = FastAPI()
-
 visitor = visitor()
 api = API()
 
@@ -30,11 +33,21 @@ def hello(id: str, start_date: str, end_date: str, range: str):
     visit = visitor.local_visitor(id, start_date, end_date, Travel_Place_df)
     result = RECOMMEND_DATA(id, start_date, end_date, visit, range)
 
-    return {"data": f"{result}"}
+    # 시각화 자료 생성
+    Folium(result)
+
+    return result
+
+@app.get("/download/map")
+def read_item(filename: str):
+    Target_file = fr'Downloads/{filename}.html'
+
+    print(f"File Download : {filename}")
+    return FileResponse(Target_file, media_type='text/html', filename=filename)
 
 
-# if __name__ == "__main__":
-#     uvicorn.run(app, host="0.0.0.0", port=8000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
-
-hello("부산광역시", "2023-06-15", "2023-07-15", "2")
+#
+# hello("부산광역시", "2023-06-15", "2023-07-15", "2")
