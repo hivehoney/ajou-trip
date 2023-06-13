@@ -1,4 +1,5 @@
 import datetime as dt
+import pandas as pd
 class utilChk:
     # 계절체크
     def classify_season(self, date):
@@ -21,22 +22,25 @@ class utilChk:
             return "non-holiday"
 
 
-    def find_consecutive_dates(self, data, range_value):
-        sorted_data = data.sort_values('rank')
-        ranks = sorted_data['rank'].tolist()
-        dates = sorted_data['baseYmd'].tolist()
+    def find_max_range(self, data, range_value):
+        rank_result = data.sort_values('rank')  # rank 기준으로 데이터 정렬
+        ranks = rank_result['rank'].tolist()  # rank 리스트 추출
 
-        consecutive_dates = []
-        max_range = round(int(range_value) / 2)
-        data_length = len(ranks)
+        max_range = int(range_value)
+        max_length = len(ranks)
 
-        for i in range(data_length - int(range_value) + 1):
-            rank_range = ranks[i:i+int(range_value)]
-            date_range = [dt.datetime.strptime(date, '%Y%m%d') for date in dates[i:i+int(range_value)]]
-            sorted_range = sorted(date_range)
-            date_diff = [(sorted_range[j+1] - sorted_range[j]).days for j in range(int(range_value) - 1)]
-            if all(diff == 1 for diff in date_diff) and all(rank_range[j] <= rank_range[j+1] for j in range(int(range_value) - 1)):
-                consecutive_dates = date_range
-                break
+        start_index = 0  # 연속된 범위의 시작 인덱스
+        max_sum = 0  # 가장 높은 점수 합계
+        curr_sum = sum(rank_result.iloc[:max_range]['score'])  # 현재 연속된 범위의 점수 합계
 
-        return consecutive_dates
+        for i in range(max_length - max_range + 1):
+            if curr_sum > max_sum:
+                max_sum = curr_sum
+                start_index = i
+
+            if i + max_range < max_length:
+                curr_sum = curr_sum - rank_result.iloc[i]['score'] + rank_result.iloc[i + max_range]['score']
+
+        return rank_result.iloc[start_index:start_index + max_range]['baseYmd'].tolist()
+
+

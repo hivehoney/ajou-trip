@@ -36,4 +36,4 @@ def hello(id: str, start_date: str, end_date: str, range: str):
 #     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
-hello("부산광역시", "2023-06-15", "2023-07-15", "3")
+hello("부산광역시", "2023-06-15", "2023-07-15", "5")

@@ -1,5 +1,7 @@
+import datetime
 import datetime as dt
 import numpy as np
+import pandas as pd
 from Common.ApiUtil import API
 from Common.Util import utilChk
 from Core.Holiday_and_season import travel_place
@@ -83,11 +85,48 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
 
     visit_result['rank'] = visit_result['score'].rank(method='dense', ascending=False)
 
-    result = util.find_consecutive_dates(visit_result, range)
+    # score 높은 기준으로 range 날짜
+    date = util.find_max_range(visit_result, range)
+
+    # 제일 점수가 높은 날짜로 range
+    start_date = date[0]
+    date_range = pd.date_range(start=start_date, periods=5, freq='D')
+    date_range_str = date_range.strftime('%Y%m%d').tolist()
 
     # 지역 가중치 score
     rcmnd_local['score'] = (rcmnd_local['tourCnt'] * 5) + (rcmnd_local['touNum'] * 0.0000005)
     rcmnd_result = rcmnd_local.sort_values(['score', 'touNum'], ascending=[False, False])
 
-    return rcmnd_result, result
+    filtered_result = visit_result[visit_result['baseYmd'].isin(date_range_str)]
+
+    fstvl = fstvl.reset_index(drop=True)
+    result = []
+
+    empty_data_index = 0
+    for index, row in filtered_result.iterrows():
+        if empty_data_index >= len(rcmnd_result):
+            empty_data_index = 0
+
+        duration = []
+        fstvl_indices = row['fstvlIndex']
+        if len(fstvl_indices) > 3:
+            fstvl_indices = fstvl_indices[:3]
+        for fstvl_index in fstvl_indices:
+            festival_data = fstvl.loc[fstvl_index, ['fstvlNm', 'addr']].squeeze().to_dict()
+            duration.append(festival_data)
+        if len(duration) < 3:
+            empty_data_subset = rcmnd_result.iloc[empty_data_index:empty_data_index + 3 - len(duration)].to_dict('records')
+            duration.extend(empty_data_subset)
+            empty_data_index += 3 - len(duration)
+        day = {
+            'title': row['baseYmd'],
+            'duration': duration
+        }
+        result.append(day)
+
+        empty_data_index += 1
+
+    print(result)
+
+    return result
 

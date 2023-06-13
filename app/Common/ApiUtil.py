@@ -21,7 +21,7 @@ class API:
         sk_url = "https://apis.openapi.sk.com/puzzle/travel?type=sig"
         headers = {
             "accept": "application/json",
-            "appkey": "l7xx846db5f3bc1e48d29b7275a745d501c8"
+            "appkey": "QIx3YJONBX4T5bQPOWcS94TamxhGUZT2aTLGNLX1"
         }
 
         response = requests.get(sk_url, headers=headers)
