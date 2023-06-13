@@ -69,11 +69,16 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
             visit_dates.at[index, 'fstvlIndex'] = []
             visit_dates.at[index, 'fstvlDate'] = []
 
-    # 지역별 관광지 갯수
-    for index, row in rcmnd_local.iterrows():
-        date_to_check = row['signguNm']
+    count_indices = []
+
+    # 지역별 관광지 Cnt 및 index
+    for index in rcmnd_local.index.tolist():
+        date_to_check = rcmnd_local.loc[index, 'signguNm']
         count = tour['addr'].apply(lambda dates: date_to_check in dates).sum()
         rcmnd_local.at[index, 'tourCnt'] = count
+        count_indices.append(tour[tour['addr'].apply(lambda dates: date_to_check in dates)].index.tolist())
+
+    rcmnd_local['countIndices'] = count_indices
 
     # 일자별 가중치 score
     visit_dates['score'] = (visit_dates['touNum'] * 0.0000005 +
@@ -90,7 +95,7 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
 
     # 제일 점수가 높은 날짜로 range
     start_date = date[0]
-    date_range = pd.date_range(start=start_date, periods=5, freq='D')
+    date_range = pd.date_range(start=start_date, periods=int(range), freq='D')
     date_range_str = date_range.strftime('%Y%m%d').tolist()
 
     # 지역 가중치 score
@@ -102,10 +107,10 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
     fstvl = fstvl.reset_index(drop=True)
     result = []
 
-    empty_data_index = 0
+    data_index = 0
     for index, row in filtered_result.iterrows():
-        if empty_data_index >= len(rcmnd_result):
-            empty_data_index = 0
+        if data_index >= len(rcmnd_result):
+            data_index = 0
 
         duration = []
         fstvl_indices = row['fstvlIndex']
@@ -113,18 +118,17 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
             fstvl_indices = fstvl_indices[:3]
         for fstvl_index in fstvl_indices:
             festival_data = fstvl.loc[fstvl_index, ['fstvlNm', 'addr']].squeeze().to_dict()
-            duration.append(festival_data)
+            duration.append({'fstvlNm': festival_data['fstvlNm'], 'addr': festival_data['addr']})
         if len(duration) < 3:
-            empty_data_subset = rcmnd_result.iloc[empty_data_index:empty_data_index + 3 - len(duration)].to_dict('records')
-            duration.extend(empty_data_subset)
-            empty_data_index += 3 - len(duration)
+            festival_name = rcmnd_result.iloc[data_index:data_index + 3 - len(duration)].to_dict('records')
+            duration.extend(festival_name)
+            data_index += 3 - len(duration)
         day = {
             'title': row['baseYmd'],
             'duration': duration
         }
         result.append(day)
-
-        empty_data_index += 1
+        data_index += 1
 
     print(result)
 

@@ -50,7 +50,7 @@ class travel_place:
         Touristdata_filename = fr'Tourist.csv'
         Tourist_Schedule_df = pd.read_csv(Touristdata_filename, encoding='cp949')
 
-        # addr(소재지주소) 컬럼으로 병합
+        # addr(소재지주소) 컬럼으로 병합 -- 문제 포인트 (etc를 지우고있음)
         Tourist_Schedule_df['addr'] = Tourist_Schedule_df['rdnmadr'].str.split().str[:2].str.join(' ')
         Tourist_Schedule_df.loc[Tourist_Schedule_df['addr'].isnull(), 'addr'] = Tourist_Schedule_df['lnmadr'].str.split().str[:2].str.join(' ')
 
@@ -64,3 +64,7 @@ class travel_place:
         # 선택한 도시
         Tourist_Schedule_df = Tourist_Schedule_df[Tourist_Schedule_df['addr'].str.contains(city)]
         return Tourist_Schedule_df
+#
+# travel_place = travel_place()
+#
+# travel_place.Tourist("부산")
