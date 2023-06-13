@@ -52,7 +52,7 @@ class API:
         try:
             url = fr'http://apis.data.go.kr/B551011/DataLabService/locgoRegnVisitrDDList?' \
                   fr'serviceKey=p7igRYPscMbJM%2BGd70el0sQ6MywPGRCBMQoB%2FVOhTj%2FWhBux%2FFXg2vUtRX9y0FTWwwjCfwZgMktA12I937NfYQ%3D%3D' \
-                  fr'&numOfRows=10000&pageNo=1&MobileOS=ETC&MobileApp=HOLIDAYTRIP&_type=json&startYmd={st}&endYmd={ed}'
+                  fr'&numOfRows=25000&pageNo=1&MobileOS=ETC&MobileApp=HOLIDAYTRIP&_type=json&startYmd={st}&endYmd={ed}'
                   # fr'&MobileOS=ETC&MobileApp=HOLIDAYTRIP&_type=json&startYmd={date}&endYmd={date}'
 
             response = requests.get(url)

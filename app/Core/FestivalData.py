@@ -98,7 +98,7 @@ location_data = df['location'].apply(geolocator.geocode)  # 주소를 기반으�
 # 위도와 경도 열 추가
 df['latitude'] = location_data.apply(lambda loc: loc.latitude if loc else None)
 df['longitude'] = location_data.apply(lambda loc: loc.longitude if loc else None)
-두
+
 
 """
 fstvlNm: 축제

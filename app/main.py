@@ -1,23 +1,17 @@
-import uvicorn
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
+import pandas as pd
+from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-
-from core.Scoring import RECOMMEND_DATA
-
-# fsho = travel_place()
-# visitor = visitor()
-# pd.set_option('display.max_rows', None)
-# pd.set_option('display.max_columns', None)
-# def main():
-#     start = 20220101
-#     end = 20221231
-#     visit = visitor.local_visitor("서울특별시", "20220114", "20220118")
-#     # fsho.fstvlHolYear(visit, start, end)
-
-
+from Core.Scoring import RECOMMEND_DATA
+from Core.Human_data import visitor
+from Common.ApiUtil import API
 
 app = FastAPI()
+
+visitor = visitor()
+api = API()
+
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,9 +23,13 @@ app.add_middleware(
 
 @app.get("/hello")
 def hello(id: str, start_date: str, end_date: str, range: str):
+    # 인기여행지/휴일
+    Travel_Place_df = api.get_travel_place()
     start_date = start_date
     end_date = end_date
-    result = RECOMMEND_DATA(id, start_date, end_date)
+    visit = visitor.local_visitor(id, start_date, end_date, Travel_Place_df)
+    result = RECOMMEND_DATA(id, start_date, end_date, visit, range)
+
     return {"message": f"Hellossss {start_date}"}
 
 # if __name__ == "__main__":

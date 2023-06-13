@@ -2,7 +2,7 @@ import pandas as pd
 def HUMANDATA(CITY_PARM):
 
     # plt.rcParams['font.family'] = 'Malgun Gothic'
-    Citydata_filename = fr'Citydata_2023-05-20.csv'
+    Citydata_filename = fr'../Citydata_2023-05-20.csv'
     All_City_df = pd.read_csv(Citydata_filename, usecols=['도시이름'])
     City_list = All_City_df['도시이름'].tolist()
     print(City_list)
