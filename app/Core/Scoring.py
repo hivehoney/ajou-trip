@@ -11,9 +11,6 @@ api = API()
 travel_place = travel_place()
 util = utilChk()
 
-#코드 결과를 보고자 하시면 다음을 맨 아래에 추가하여 실행하세요
-# Score_list = []
-
 def RECOMMEND_DATA(city, st, ed, visit, range):
 
     # 일자별 유동인구
@@ -93,7 +90,7 @@ def RECOMMEND_DATA(city, st, ed, visit, range):
 
     # 제일 점수가 높은 날짜로 range
     start_date = date[0]
-    date_range = pd.date_range(start=start_date, periods=5, freq='D')
+    date_range = pd.date_range(start=start_date, periods=int(range)+1, freq='D')
     date_range_str = date_range.strftime('%Y%m%d').tolist()
 
     # 지역 가중치 score
